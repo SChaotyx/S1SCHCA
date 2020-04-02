@@ -5993,7 +5993,7 @@ Obj89_GotoCredits:			; XREF: Obj89_Index
 		move.b	#$1C,($FFFFF600).w ; exit to credits
 
 Obj89_Display:
-		bra.w	DisplaySprite
+		jmp	DisplaySprite
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - Sonic on the ending	sequence
@@ -12243,6 +12243,7 @@ Obj4B_Collect:				; XREF: Obj4B_Index
 		move.b	#0,$20(a0)
 		bsr.w	SingleObjLoad
 		bne.w	Obj4B_PlaySnd
+		clr.b   ($FFFFFFD1).w    ; cancel the Homing Attack, clearing the number of frames Sonic can chasing the object
 		move.b	#$7C,0(a1)	; load giant ring flash	object
 		move.w	8(a0),8(a1)
 		move.w	$C(a0),$C(a1)
@@ -15926,6 +15927,8 @@ Obj36_Upright:				; XREF: Obj36_Solid
 Obj36_Hurt:				; XREF: Obj36_SideWays; Obj36_Upright
 		tst.b	($FFFFFE2D).w	; is Sonic invincible?
 		bne.s	Obj36_Display	; if yes, branch
+		tst.w	($FFFFD030).w	; +++ is Sonic invulnerable?
+		bne.s	Obj36_Display	; +++ if yes, branch
 		move.l	a0,-(sp)
 		movea.l	a0,a2
 		lea	($FFFFD000).w,a0
@@ -23762,6 +23765,9 @@ Obj01_MdRoll:				; XREF: Obj01_Modes
 
 Obj01_MdJump2:				; XREF: Obj01_Modes
 		clr.b   $39(a0)
+		bsr.w	Sonic_DoubleJump
+		bsr.w	Sonic_JumpDash
+		bsr.w   Sonic_Homingattack
 		bsr.w	Sonic_JumpHeight
 		bsr.w	Sonic_ChgJumpDir
 		bsr.w	Sonic_LevelBound
@@ -24426,11 +24432,73 @@ locret_133E8:
 		rts	
 ; End of function Sonic_Roll
 ; ===========================================================================
+
+; ---------------------------------------------------------------------------
+; Subroutine allowing Sonic to jump
+; ---------------------------------------------------------------------------
+
+; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
+
+
+Sonic_Jump:				; XREF: Obj01_MdNormal; Obj01_MdRoll
+		move.b	($FFFFF603).w,d0
+		andi.b	#$70,d0		; is A,	B or C pressed?
+		beq.w	locret_1348E	; if not, branch
+		moveq	#0,d0
+		move.b	$26(a0),d0
+		addi.b	#$80,d0
+		bsr.w	sub_14D48
+		cmpi.w	#6,d1
+		blt.w	locret_1348E
+		move.w	#$680,d2
+		btst	#6,$22(a0)
+		beq.s	loc_1341C
+		move.w	#$380,d2
+
+loc_1341C:
+		moveq	#0,d0
+		move.b	$26(a0),d0
+		subi.b	#$40,d0
+		jsr	(CalcSine).l
+		muls.w	d2,d1
+		asr.l	#8,d1
+		add.w	d1,$10(a0)	; make Sonic jump
+		muls.w	d2,d0
+		asr.l	#8,d0
+		add.w	d0,$12(a0)	; make Sonic jump
+		bset	#1,$22(a0)
+		bclr	#5,$22(a0)
+		addq.l	#4,sp
+		move.b	#1,$3C(a0)
+		clr.b	$38(a0)
+		move.w	#$A0,d0
+		jsr	(PlaySound_Special).l ;	play jumping sound
+		move.b	#$13,$16(a0)
+		move.b	#9,$17(a0)
+		btst	#2,$22(a0)
+		bne.s	loc_13490
+		move.b	#$E,$16(a0)
+		move.b	#7,$17(a0)
+		move.b	#2,$1C(a0)	; use "jumping"	animation
+		bset	#2,$22(a0)
+		addq.w	#5,$C(a0)
+
+locret_1348E:
+		rts	
+; ===========================================================================
+
+loc_13490:
+		bset	#4,$22(a0)
+		rts	
+; End of function Sonic_Jump
+; ===========================================================================
 ; ===========================================================================
 ; Include Code
- include "_inc\Obj\Sonic Jump.asm"
  include "_inc\Obj\Sonic SpinDash.asm"
  include "_inc\Obj\Sonic SuperPeelOut.asm"
+ include "_inc\Obj\Sonic JumpDash.asm"
+ include "_inc\Obj\Sonic DoubleJump.asm"
+ include "_inc\Obj\Sonic HomingAttack.asm"
 ; ===========================================================================
 ; ===========================================================================
 
@@ -24829,6 +24897,9 @@ Sonic_ResetOnFloor:			; XREF: PlatformObject; et al
 		nop	
 
 loc_137AE:
+		clr.b	($FFFFFE2A).w    ; clear doublejump flag 
+        clr.b	($FFFFFFEB).w	; clear jumpdash flag
+		clr.b   ($FFFFFFD1).w    ; cancel the Homing Attack, clearing the number of frames Sonic can chasing the object
 		bclr	#5,$22(a0)
 		bclr	#1,$22(a0)
 		bclr	#4,$22(a0)
@@ -34557,6 +34628,8 @@ locret_1AEF2:
 ; ===========================================================================
 
 Touch_Monitor:
+		tst.b   ($FFFFFFD1).w      ; Sonic Homing Attack is chasing the monitor?
+        bne.s   loc_1AF1E_bounce   ; if yes, destroy the monitor
 		tst.w	$12(a0)		; is Sonic moving upwards?
 		bpl.s	loc_1AF1E	; if not, branch
 		move.w	$C(a0),d0
@@ -34575,10 +34648,36 @@ loc_1AF1E:
 		cmpi.b	#2,$1C(a0)	; is Sonic rolling/jumping?
 		bne.s	locret_1AF2E
 		neg.w	$12(a0)		; reverse Sonic's y-motion
-		addq.b	#2,$24(a1)	; advance the monitor's routine counter
-
+loc_1AF1E_bounce:
+      	addq.b   #2,$24(a1)   ; advance the monitor's routine counter
+      	tst.b	($FFFFFFEB).w	; was the monitor destroyed with a jumpdash?
+		bne.w	BounceJD	; if yes, branch
 locret_1AF2E:
-		rts	
+   ;   rts
+; ===========================================================================
+
+; ---------------------------------------------------------------------------
+; Subroutine to Bounce Sonic upwards in Homing Attack
+; ---------------------------------------------------------------------------
+	
+HA_Bounceup:
+      tst.b   ($FFFFFFD1).w   ; is Sonic chasing some object?
+      beq.s   HA_Bounceup_rts   ; if not, branch
+      clr.b   ($FFFFFFD1).w   ; if yes, cancel the Homing Attack, clearing the number of frames Sonic can chasing the object
+
+      clr.w   $10(a0)            ; clear Sonic X-vel (stop sonic horizontally)
+      move.w   #-$600,$12(a0)      ; set -$600 for Y-velocity (move sonic upwards)
+      btst   #6,$22(a0)         ; is sonic underwater?
+      beq.s   HA_Bounceup_Shoes   ; if not, branch
+      move.w   #-$320,$12(a0)      ; set -$320 for underwater Y-velocity (move sonic upwards)
+      
+HA_Bounceup_Shoes:
+      tst.b   ($FFFFFE2E).w      ; does sonic has speed shoes?
+      beq.s   HA_Bounceup_rts      ; if not, branch
+      move.w   #-$650,$12(a0)      ; set -$650 for Y-velocity (move sonic upwards)
+
+HA_Bounceup_rts:
+      rts
 ; ===========================================================================
 
 Touch_Enemy:				; XREF: Touch_ChkValue
@@ -34624,8 +34723,17 @@ loc_1AF82:
 
 loc_1AF9C:
 		bsr.w	AddPoints
+		bsr.w   HA_Bounceup   ; Bounce Sonic upwards if is Homing Attack
 		move.b	#$27,0(a1)	; change object	to points
 		move.b	#0,$24(a1)
+		tst.b	($FFFFFFEB).w	; was the enemy destroyed with a jumpdash?
+		bne.s	JSR_BounceJD	; if yes, branch
+		bra.s	loc_1AF9C_cont	; if not, skip
+		
+JSR_BounceJD:
+		jsr	BounceJD	; jump to BounceJD
+		
+loc_1AF9C_cont:
 		tst.w	$12(a0)
 		bmi.s	loc_1AFC2
 		move.w	$C(a0),d0
@@ -34646,6 +34754,29 @@ loc_1AFCA:
 ; ===========================================================================
 Enemy_Points:	dc.w 10, 20, 50, 100
 ; ===========================================================================
+
+; -------------------------------------------------------------------------
+; Subroutine to stop Sonic, bounce him up and to give him the ability to
+; Jumpdash again when he has performed a Jumpdash
+; -------------------------------------------------------------------------
+BounceJD:
+		tst.b	($FFFFFFEB).w	; was jumpdash flag set?
+		beq.s	BounceJD_End	; if not, branch
+		clr.b	($FFFFFFEB).w	; if yes, clear jumpdash flag (allow Sonic to jumpdash again)
+		clr.w	$10(a0)		; clear X-velocity (stop sonic)
+		move.w	#-$5F0,$12(a0)	; use -$5F0 for Y-velocity (move sonic upwards)
+		btst	#6,$22(a0)	; is sonic underwater?
+		beq.s	BounceJD_Shoes	; if not, branch
+		move.w	#-$320,$12(a0)	; use only -$320 for Y-velocity (move sonic upwards)
+		
+BounceJD_Shoes:
+		tst.b	($FFFFFE2E).w	; does sonic has speed shoes?
+		beq.s	BounceJD_End	; if not, branch
+		move.w	#-$620,$12(a0)	; use -$620 for Y-velocity (move sonic upwards)
+		
+BounceJD_End:
+		rts			; return
+; End of function BounceJD
 
 loc_1AFDA:				; XREF: Touch_CatKiller
 		bset	#7,$22(a1)
