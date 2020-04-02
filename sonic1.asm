@@ -23765,8 +23765,8 @@ Obj01_MdRoll:				; XREF: Obj01_Modes
 
 Obj01_MdJump2:				; XREF: Obj01_Modes
 		clr.b   $39(a0)
-		bsr.w	Sonic_DoubleJump
-		bsr.w	Sonic_JumpDash
+		;bsr.w	Sonic_DoubleJump
+		;bsr.w	Sonic_JumpDash
 		bsr.w   Sonic_Homingattack
 		bsr.w	Sonic_JumpHeight
 		bsr.w	Sonic_ChgJumpDir
@@ -34838,7 +34838,12 @@ Hurt_Reverse:
 Hurt_ChkSpikes:
 		move.b	#0,$39(a0)	; clear Spin Dash flag
 		move.w	#0,$14(a0)
-		move.b	#$1A,$1C(a0)
+		move.b	#$1A,$1C(a0) ;load normal damage animation
+		cmpi.b	#$6E,(a2)	; was damage caused by electric shock(obj6E)?
+		bne.s	@Hurt_ChkSpikes	; if not, branch
+		move.b	#$23,$1C(a0) ;load electric damage animation
+
+	@Hurt_ChkSpikes:
 		move.w	#$78,$30(a0)
 		move.w	#$A3,d0		; load normal damage sound
 		cmpi.b	#$36,(a2)	; was damage caused by spikes?

@@ -27,15 +27,16 @@
 		dc.w SonAni_Drown-SonicAniData
 		dc.w SonAni_Death2-SonicAniData
 		dc.w SonAni_Shrink-SonicAniData
-		dc.w SonAni_Hurt-SonicAniData
-		dc.w SonAni_LZSlide-SonicAniData
-		dc.w SonAni_Blank-SonicAniData
-		dc.w SonAni_Float3-SonicAniData
-		dc.w SonAni_Float4-SonicAniData
+		dc.w SonAni_Hurt-SonicAniData	;1A
+		dc.w SonAni_LZSlide-SonicAniData ;1B
+		dc.w SonAni_Blank-SonicAniData ;1C
+		dc.w SonAni_Float3-SonicAniData	;1D
+		dc.w SonAni_Float4-SonicAniData ;1E
 		dc.w SonAni_SpinDash-SonicAniData	;1F
 		dc.w SonAni_SpeelOut-SonicAniData	;20
 		dc.w SonAni_SpeelOutUW-SonicAniData   ;21
 		dc.w SonAni_Run2-SonicAniData   ;22
+		dc.w SonAni_ElectricHurt-SonicAniData ;23
 SonAni_Walk:	dc.b $FF, 8, 9,	$A, $B,	6, 7, $FF
 SonAni_Run:	dc.b $FF, $1E, $1F, $20, $21, $FF, $FF,	$FF
 SonAni_Roll:	dc.b $FE, $2E, $2F, $30, $31, $32, $FF,	$FF
@@ -49,7 +50,7 @@ SonAni_Warp1:	dc.b $3F, $33, $FF, 0
 SonAni_Warp2:	dc.b $3F, $34, $FF, 0
 SonAni_Warp3:	dc.b $3F, $35, $FF, 0
 SonAni_Warp4:	dc.b $3F, $36, $FF, 0
-SonAni_Stop:	dc.b 5,	$6F, $70, $37, $38, $FE, 2, 0
+SonAni_Stop:	dc.b 7,	$37, $38, $FF
 SonAni_Float1:	dc.b 7,	$3C, $3F, $FF
 SonAni_Float2:	dc.b 7,	$3C, $3D, $53, $3E, $54, $FF, 0
 SonAni_Spring:	dc.b $2F, $40, $FD, 0
@@ -76,4 +77,5 @@ SonAni_SpeelOutUW:  dc.b 0, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, $A, $A, $A, $A, $B,
 					dc.b 8, 8, 8, 9, 9, 9, $A, $A, $A, $B, $B, $B												; 36 frames fast walk
 					dc.b $1E, $1E, $1F, $1F, $20, $20, $21, $21, $1E, $1E, $1F, $1F, $20, $20, $21, $21, $FE, 8, 0		; 52 frames run
 SonAni_Run2:    dc.b $FF, $5E, $5F, $60, $61, $FF, $FF,	$FF
+SonAni_ElectricHurt:	dc.b 2, $6F, $70, $FF
 		even
