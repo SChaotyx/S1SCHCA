@@ -3166,6 +3166,7 @@ Title_LoadText:
 		move.w	#0,($FFFFFFF0).w ; disable debug mode
 		move.w	#0,($FFFFFFEA).w
 		move.w	#0,($FFFFFE10).w ; set level to	GHZ (00)
+		move.w	#0,($FFFFF601).w ; reset secuencial level order count
 		move.w	#0,($FFFFF634).w ; disable pallet cycling
 		bsr.w	LevelSizeLoad
 		bsr.w	DeformBgLayer
@@ -3305,9 +3306,9 @@ loc_3230:
 
 Title_ChkLevSel:
 		tst.b	($FFFFFFE0).w	; check	if level select	code is	on
-		beq.w	PlayLevel	; if not, play level
+		beq.w	ChkLevelOrder	; if not, play level
 		btst	#6,($FFFFF604).w ; check if A is pressed
-		beq.w	PlayLevel	; if not, play level
+		beq.w	ChkLevelOrder	; if not, play level
 		moveq	#2,d0
 		bsr.w	PalLoad2	; load level select pallet
 		lea	($FFFFCC00).w,a1
@@ -3381,6 +3382,7 @@ LevSel_Credits:				; XREF: LevelSelect
 ; ===========================================================================
 
 LevSel_Level_SS:			; XREF: LevelSelect
+		move.b	d0,($FFFFF601).w
 		add.w	d0,d0
 		move.w	LSelectPointers(pc,d0.w),d0 ; load level number
 		bmi.w	LevelSelect
@@ -3394,13 +3396,18 @@ LevSel_Level_SS:			; XREF: LevelSelect
 		move.l	d0,($FFFFFE22).w ; clear time
 		move.l	d0,($FFFFFE26).w ; clear score
 		rts	
+; ---------------------------------------------------------------------------
+; Level	select - level pointers
+; ---------------------------------------------------------------------------
+
+	include "_inc\LevelSelect Pointers.asm"
+
 ; ===========================================================================
 
 LevSel_Level:				; XREF: LevSel_Level_SS
 		andi.w	#$3FFF,d0
 		move.w	d0,($FFFFFE10).w ; set level number
-
-PlayLevel:				; XREF: ROM:00003246j ...
+PlayLevel:				; XREF: ROM:00003246j ...	
 		move.b	#$C,($FFFFF600).w ; set	screen mode to $0C (level)
 		move.b	#3,($FFFFFE12).w ; set lives to	3
 		moveq	#0,d0
@@ -3414,13 +3421,20 @@ PlayLevel:				; XREF: ROM:00003246j ...
 		move.b	d0,($FFFFFE18).w ; clear continues
 		move.b	#$E0,d0
 		bsr.w	PlaySound_Special ; fade out music
+		rts
+ChkLevelOrder:
+		move.b	($FFFFF601).w,d0
+		add.w	d0,d0
+		move.w	LevelOrder2(pc,d0.w),d0 ; load level from level order array
+		move.w	d0,(v_zone).w	; set level number
+		bsr.s PlayLevel
 		rts	
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
-; Level	select - level pointers
+; Level	Order for First Start level
 ; ---------------------------------------------------------------------------
 
-	include "_inc\LevelSelect Pointers.asm"
+LevelOrder2: include "_inc\LevelOrder.asm"
 	
 ; ---------------------------------------------------------------------------
 ; Level	select codes
@@ -15294,13 +15308,9 @@ Obj3A_AddBonus:				; XREF: Obj3A_ChkBonus
 ; ===========================================================================
 
 Obj3A_NextLevel:			; XREF: Obj3A_Index
-		move.b	($FFFFFE10).w,d0
-		andi.w	#7,d0
-		lsl.w	#3,d0
-		move.b	($FFFFFE11).w,d1
-		andi.w	#3,d1
-		add.w	d1,d1
-		add.w	d1,d0
+		addq.b	#1,($FFFFF601).w
+		move.b	($FFFFF601).w,d0
+		add.w	d0,d0
 		move.w	LevelOrder(pc,d0.w),d0 ; load level from level order array
 		move.w	d0,($FFFFFE10).w ; set level number
 		tst.w	d0
@@ -15327,7 +15337,7 @@ Obj3A_Display2:				; XREF: Obj3A_NextLevel, Obj3A_ChkSS
 ; Level	order array
 ; ---------------------------------------------------------------------------
 
-	include "_inc\LevelOrder.asm"
+LevelOrder:	include "_inc\LevelOrder.asm"
 
 ; ===========================================================================
 
@@ -23790,8 +23800,8 @@ Obj01_MdRoll:				; XREF: Obj01_Modes
 
 Obj01_MdJump2:				; XREF: Obj01_Modes
 		clr.b   $39(a0)
-		;bsr.w	Sonic_DoubleJump
-		;bsr.w	Sonic_JumpDash
+		bsr.w	Sonic_DoubleJump
+		bsr.w	Sonic_JumpDash
 		bsr.w   Sonic_Homingattack
 		bsr.w	Sonic_JumpHeight
 		bsr.w	Sonic_ChgJumpDir
