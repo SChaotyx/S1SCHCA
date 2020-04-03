@@ -11,6 +11,10 @@
 ; This file should be compiled with "as	-M"
 
 ; ===========================================================================
+
+	include	"Constants.asm"
+	include	"Variables.asm"
+
 align macro
 	cnop 0,\1
 	endm
@@ -3380,7 +3384,7 @@ LevSel_Level_SS:			; XREF: LevelSelect
 		add.w	d0,d0
 		move.w	LSelectPointers(pc,d0.w),d0 ; load level number
 		bmi.w	LevelSelect
-		cmpi.w	#$700,d0	; check	if level is 0700 (Special Stage)
+		cmpi.w	#$900,d0	; check	if level is 0700 (Special Stage)
 		bne.s	LevSel_Level	; if not, branch
 		move.b	#$10,($FFFFF600).w ; set screen	mode to	$10 (Special Stage)
 		clr.w	($FFFFFE10).w	; clear	level
@@ -3415,9 +3419,9 @@ PlayLevel:				; XREF: ROM:00003246j ...
 ; ---------------------------------------------------------------------------
 ; Level	select - level pointers
 ; ---------------------------------------------------------------------------
-LSelectPointers:
-		incbin	misc\ls_point.bin
-		even
+
+	include "_inc\LevelSelect Pointers.asm"
+	
 ; ---------------------------------------------------------------------------
 ; Level	select codes
 ; ---------------------------------------------------------------------------
@@ -3656,12 +3660,20 @@ loc_3598:				; XREF: LevSel_ChgLine
 ; ---------------------------------------------------------------------------
 ; Level	select menu text
 ; ---------------------------------------------------------------------------
-LevelMenuText:	incbin	misc\menutext.bin
-		even
+
+	include "_inc\LevelSelect Text.asm"
+
 ; ---------------------------------------------------------------------------
 ; Music	playlist
 ; ---------------------------------------------------------------------------
-MusicList:	incbin	misc\muslist1.bin
+MusicList:
+		dc.b bgm_GHZ	; GHZ
+		dc.b bgm_LZ		; LZ
+		dc.b bgm_MZ		; MZ
+		dc.b bgm_SLZ	; SLZ
+		dc.b bgm_SYZ	; SYZ
+		dc.b bgm_SBZ	; SBZ
+		dc.b bgm_FZ		; FZ
 		even
 ; ===========================================================================
 
@@ -6443,12 +6455,9 @@ LevelSizeLoad:				; XREF: TitleScreen; Level; EndingSequence
 ; ---------------------------------------------------------------------------
 ; Level size array and ending start location array
 ; ---------------------------------------------------------------------------
-LevelSizeArray:	incbin	misc\lvl_size.bin
-		even
 
-EndingStLocArray:
-		incbin	misc\sloc_end.bin
-		even
+	include	"_inc\LevelSize.asm"
+	include	"_inc\StartLocation - Ending.asm"
 
 ; ===========================================================================
 
@@ -6513,17 +6522,13 @@ loc_60EE:
 loc_60F8:
 		move.w	d0,($FFFFF704).w
 		bsr.w	BgScrollSpeed
-		moveq	#0,d0
-		move.b	($FFFFFE10).w,d0
-		lsl.b	#2,d0
-		move.l	LoopTileNums(pc,d0.w),($FFFFF7AC).w
 		bra.w	LevSz_Unk
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Sonic	start location array
 ; ---------------------------------------------------------------------------
-StartLocArray:	incbin	misc\sloc_lev.bin
-		even
+
+	include "_inc\StartLocation - Levels.asm"
 
 ; ---------------------------------------------------------------------------
 ; Which	256x256	tiles contain loops or roll-tunnels
@@ -6531,12 +6536,25 @@ StartLocArray:	incbin	misc\sloc_lev.bin
 ; Format - 4 bytes per zone, referring to which 256x256 evoke special events:
 ; loop,	loop, tunnel, tunnel
 ; ---------------------------------------------------------------------------
-LoopTileNums:	incbin	misc\loopnums.bin
+LoopTileNums:
+; 			loop	loop	tunnel	tunnel
+	dc.b	$B5,	$7F,	$1F,	$20		; Green Hill
+	dc.b	$7F,	$7F,	$7F,	$7F		; Labyrinth
+	dc.b	$7F,	$7F,	$7F,	$7F		; Marble
+	dc.b	$AA,	$B4,	$7F,	$7F		; Star Light
+	dc.b	$7F,	$7F,	$7F,	$7F		; Spring Yard
+	dc.b	$7F,	$7F,	$7F,	$7F		; Scrap Brain
+	dc.b	$7F,	$7F,	$7F,	$7F		; Ending (Green Hill)
 		even
+
 
 ; ===========================================================================
 
 LevSz_Unk:				; XREF: LevelSizeLoad
+		moveq	#0,d0
+		move.b	($FFFFFE10).w,d0
+		lsl.b	#2,d0
+		move.l	LoopTileNums(pc,d0.w),($FFFFF7AC).w
 		moveq	#0,d0
 		move.b	($FFFFFE10).w,d0
 		lsl.w	#3,d0
@@ -15308,8 +15326,9 @@ Obj3A_Display2:				; XREF: Obj3A_NextLevel, Obj3A_ChkSS
 ; ---------------------------------------------------------------------------
 ; Level	order array
 ; ---------------------------------------------------------------------------
-LevelOrder:	incbin	misc\lvl_ord.bin
-		even
+
+	include "_inc\LevelOrder.asm"
+
 ; ===========================================================================
 
 Obj3A_ChkPos2:				; XREF: Obj3A_Index
@@ -23588,7 +23607,13 @@ Obj01_Modes:	dc.w Obj01_MdNormal-Obj01_Modes
 ; ---------------------------------------------------------------------------
 ; Music	to play	after invincibility wears off
 ; ---------------------------------------------------------------------------
-MusicList2:	incbin	misc\muslist2.bin
+MusicList2:
+		dc.b bgm_GHZ
+		dc.b bgm_LZ
+		dc.b bgm_MZ
+		dc.b bgm_SLZ
+		dc.b bgm_SYZ
+		dc.b bgm_SBZ
 		even
 ; ===========================================================================
 
@@ -35409,8 +35434,9 @@ SS_LayoutIndex:
 ; ---------------------------------------------------------------------------
 ; Special stage	start locations
 ; ---------------------------------------------------------------------------
-SS_StartLoc:	incbin	misc\sloc_ss.bin
-		even
+;	incbin	misc\sloc_ss.bin
+;		even
+	include	"_inc\StartLocation - Special Stages.asm"
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	load special stage layout
