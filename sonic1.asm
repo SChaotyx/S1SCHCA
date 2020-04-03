@@ -3166,7 +3166,6 @@ Title_LoadText:
 		move.w	#0,($FFFFFFF0).w ; disable debug mode
 		move.w	#0,($FFFFFFEA).w
 		move.w	#0,($FFFFFE10).w ; set level to	GHZ (00)
-		move.w	#0,($FFFFF601).w ; reset secuencial level order count
 		move.w	#0,($FFFFF634).w ; disable pallet cycling
 		bsr.w	LevelSizeLoad
 		bsr.w	DeformBgLayer
@@ -3424,6 +3423,7 @@ PlayLevel:				; XREF: ROM:00003246j ...
 		bsr.w	PlaySound_Special ; fade out music
 		rts
 ChkLevelOrder:
+		clr.b	($FFFFF601).w ; reset secuencial level order count
 		move.b	($FFFFF601).w,d0
 		add.w	d0,d0
 		move.w	LevelOrder2(pc,d0.w),d0 ; load level from level order array
