@@ -3407,6 +3407,7 @@ LevSel_Level_SS:			; XREF: LevelSelect
 LevSel_Level:				; XREF: LevSel_Level_SS
 		andi.w	#$3FFF,d0
 		move.w	d0,($FFFFFE10).w ; set level number
+		
 PlayLevel:				; XREF: ROM:00003246j ...	
 		move.b	#$C,($FFFFF600).w ; set	screen mode to $0C (level)
 		move.b	#3,($FFFFFE12).w ; set lives to	3
