@@ -23803,7 +23803,7 @@ Obj01_MdJump2:				; XREF: Obj01_Modes
 		clr.b   $39(a0)
 		bsr.w	Sonic_DoubleJump
 		bsr.w	Sonic_JumpDash
-		bsr.w   Sonic_Homingattack
+		;bsr.w   Sonic_Homingattack
 		bsr.w	Sonic_JumpHeight
 		bsr.w	Sonic_ChgJumpDir
 		bsr.w	Sonic_LevelBound
