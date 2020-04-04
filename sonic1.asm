@@ -3424,19 +3424,10 @@ PlayLevel:				; XREF: ROM:00003246j ...
 		rts
 ChkLevelOrder:
 		clr.b	($FFFFF601).w ; reset secuencial level order count
-		move.b	($FFFFF601).w,d0
-		add.w	d0,d0
-		move.w	LevelOrder2(pc,d0.w),d0 ; load level from level order array
-		move.w	d0,(v_zone).w	; set level number
+		jsr	CheckNextLevel
 		bsr.s PlayLevel
 		rts	
 ; ===========================================================================
-; ---------------------------------------------------------------------------
-; Level	Order for First Start level
-; ---------------------------------------------------------------------------
-
-LevelOrder2: include "_inc\LevelOrder.asm"
-	
 ; ---------------------------------------------------------------------------
 ; Level	select codes
 ; ---------------------------------------------------------------------------
@@ -8298,8 +8289,7 @@ Resize_SBZ3:
 		cmpi.w	#$18,($FFFFD00C).w ; has Sonic reached the top of the level?
 		bcc.s	locret_6F8C	; if not, branch
 		clr.b	($FFFFFE30).w
-		move.w	#1,($FFFFFE02).w ; restart level
-		move.w	#$502,($FFFFFE10).w ; set level	number to 0502 (FZ)
+		jsr StartNextLevel
 		move.b	#1,($FFFFF7C8).w ; freeze Sonic
 
 locret_6F8C:
@@ -15309,11 +15299,7 @@ Obj3A_AddBonus:				; XREF: Obj3A_ChkBonus
 ; ===========================================================================
 
 Obj3A_NextLevel:			; XREF: Obj3A_Index
-		addq.b	#1,($FFFFF601).w
-		move.b	($FFFFF601).w,d0
-		add.w	d0,d0
-		move.w	LevelOrder(pc,d0.w),d0 ; load level from level order array
-		move.w	d0,($FFFFFE10).w ; set level number
+		bsr.w 	PrepareNextLevel
 		tst.w	d0
 		bne.s	Obj3A_ChkSS
 		move.b	#0,($FFFFF600).w ; set game mode to level (00)
@@ -15333,13 +15319,6 @@ loc_C6EA:				; XREF: Obj3A_ChkSS
 
 Obj3A_Display2:				; XREF: Obj3A_NextLevel, Obj3A_ChkSS
 		bra.w	DisplaySprite
-; ===========================================================================
-; ---------------------------------------------------------------------------
-; Level	order array
-; ---------------------------------------------------------------------------
-
-LevelOrder:	include "_inc\LevelOrder.asm"
-
 ; ===========================================================================
 
 Obj3A_ChkPos2:				; XREF: Obj3A_Index
@@ -15392,6 +15371,23 @@ Obj3A_Config:	dc.w 4,	$124, $BC	; x-start, x-main, y-main
 		dc.b 2,	4
 		dc.w $20C, $14C, $CC
 		dc.b 2,	5
+; ===========================================================================
+; ---------------------------------------------------------------------------
+; Level Order Checker
+; ---------------------------------------------------------------------------
+StartNextLevel:
+		move.w	#1,($FFFFFE02).w ; restart the level
+PrepareNextLevel:
+		addq.b	#1,($FFFFF601).w
+CheckNextLevel:
+		clr.w d0
+		move.b	($FFFFF601).w,d0
+		add.b	d0,d0
+		move.w	LevelOrder(pc,d0.w),d0 ; load level from level order array
+		move.w	d0,($FFFFFE10).w ; set level number
+		rts
+
+	include "_inc\LevelOrder.asm"
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Object 7E - special stage results screen
@@ -24403,9 +24399,8 @@ Boundary_Bottom:
 		cmpi.w	#$2000,($FFFFD008).w
 		bcs.w	KillSonic_jmp
 		clr.b	($FFFFFE30).w	; clear	lamppost counter
-		move.w	#1,($FFFFFE02).w ; restart the level
-		move.w	#$103,($FFFFFE10).w ; set level	to SBZ3	(LZ4)
- Boundary_Bottom_locret:
+		jsr StartNextLevel
+Boundary_Bottom_locret:
 		rts	
 KillSonic_jmp:
 		jmp KillSonic
